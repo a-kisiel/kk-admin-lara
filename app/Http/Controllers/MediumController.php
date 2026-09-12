@@ -13,8 +13,10 @@ class MediumController extends Controller
 {
     public function index(): Response
     {
+        $media = Medium::withCount('pieces')->get();
+
         return Inertia::render('Media/index', [
-            'media' => Medium::all() ?? []
+            'media' => $media
         ]);
     }
 

@@ -20,13 +20,11 @@
         <div class="list">
             {#each props.media as medium}
             <div class="item">
-                <a href="{`/media/${medium.id}`}">{medium.title}</a>
+                <a href="{`/media/${medium.id}`}">{medium.title}</a> ({medium.pieces_count})
             </div>
             {:else}
             <div class="list-else">No media yet.</div>
             {/each}
         </div>
-        
-        <!-- <List list=props.pieces /> -->
     </div>
 </div>

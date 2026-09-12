@@ -13,7 +13,7 @@
 
 {#if mode !== 'show'}
 <Field.Field orientation="horizontal">
-    <Button onclick={(e: any) => {save(e)}} type="submit">Submit</Button>
+    <Button onclick={(e: any) => {save(e)}} type="submit">Save</Button>
     <Button variant="outline" type="button"><a href="/{type}/{id}">Cancel</a></Button>
 </Field.Field>
 {:else}

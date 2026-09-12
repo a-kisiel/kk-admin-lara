@@ -18,15 +18,51 @@ use Illuminate\Support\Facades\Log;
 
 class PieceController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $pieces = Piece::with(['media', 'collections', 'children'])
-            ->whereNull('parent_id')
-            ->orderBy('title', 'asc')
-            ->get()
-            ->append(['stub']);
+        $sort = $request->input('sort');
+
+        $query = Piece::with(['media', 'collections', 'children'])
+            ->whereNull('parent_id');
+
+        if (!empty($sort)) {
+            if ($sort === 'recent')
+                $query->orderBy('created_at', 'desc');
+            elseif ($sort === 'alphabetical')
+                $query->orderBy('title', 'asc');
+        }
+        else
+            $query->orderBy('title', 'asc');
+        
+        $pieces = $query->paginate(20);
+
+        $total_pieces = $pieces->total();
+
+        $pieces = $pieces->append(['stub']);
+
+        $media = [];
+        $all_media = Medium::all();
+        foreach($all_media as $medium)
+            $media[] = [
+                'label' => $medium->title,
+                'value' => $medium->id
+            ];
+
+        $collections = [];
+        $all_collections = Collection::all();
+        foreach($all_collections as $collection)
+            $collections[] = [
+                'label' => $collection->title,
+                'value' => $collection->id
+            ];
+
         return Inertia::render('Pieces/index', [
-            'pieces' => $pieces
+            'pieces' => $pieces,
+            'sort' => $sort,
+            'page' => $request->query('page') ?? 1,
+            'total_pieces' => $total_pieces,
+            'media' => $media,
+            'collections' => $collections
         ]);
     }
 
@@ -60,7 +96,7 @@ class PieceController extends Controller
         $piece = Piece::with(['media', 'collections', 'children'])
             ->findOrFail($id);
         return Inertia::render('Pieces/form', [
-            'imgUrl' => Storage::url(''),
+            'imgUrl' => config('filesystems.disks.' . config('filesystems.default') . '.url'),
             'mode' => 'show',
             'piece' => $piece
         ]);
@@ -88,8 +124,7 @@ class PieceController extends Controller
             ];
 
         return Inertia::render('Pieces/form', [
-            'imgUrl' => Storage::url(''),
-            'mode' => 'edit',
+            'imgUrl' => config('filesystems.disks.' . config('filesystems.default') . '.url'),
             'piece' => $piece,
             'media' => $media,
             'collections' => $collections
@@ -100,24 +135,22 @@ class PieceController extends Controller
     {
         $data = $request->input();
         $all = $request->all();
-        Log::debug($all);
 
         if ($request->hasFile('main_uncompressed') && $request->hasFile('main_compressed')) {
             $uncompressed = $request->file('main_uncompressed');
             $compressed = $request->file('main_compressed');
 
-            $data['hash'] = $piece->getNewHash();
+            $data['hash'] = Piece::getNewHash();
         }
 
         $piece = Piece::create($data);
-
-        Log::debug("created $piece->id");
 
         if ($request->hasFile('main_uncompressed') && $request->hasFile('main_compressed')) {
             $piece->addImage($uncompressed, $data['hash'], 'jpg');
             $piece->addImage($compressed, $data['hash'], 'webp');
         }
 
+        $piece->handleChildren($request, $data['children'] ?? []);
         $piece->updateMedia($data['media']);
         $piece->updateCollections($data['collections']);
 
@@ -127,12 +160,8 @@ class PieceController extends Controller
     public function update($id, Request $request): RedirectResponse
     {
         $data = $request->input();
-
-        $all = $request->all();
-        Log::debug($all);
         
-        $piece = Piece::with(['media', 'collections'])
-            ->findOrFail($id);
+        $piece = Piece::with(['media', 'collections', 'children'])->findOrFail($id);
 
         if ($request->hasFile('main_uncompressed') && $request->hasFile('main_compressed')) {
             $uncompressed = $request->file('main_uncompressed');
@@ -142,6 +171,8 @@ class PieceController extends Controller
             $piece->addImage($uncompressed, $data['hash'], 'jpg');
             $piece->addImage($compressed, $data['hash'], 'webp');
         }
+
+        $piece->handleChildren($request, $data['children'] ?? []);
 
         $piece->update($data);
 

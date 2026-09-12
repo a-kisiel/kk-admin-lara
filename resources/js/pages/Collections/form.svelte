@@ -12,7 +12,6 @@
     } = $props();
 
     let form = $state(collection ?? {});
-    console.log($state.snapshot(form))
 </script>
 
 <div>

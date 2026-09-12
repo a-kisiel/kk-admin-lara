@@ -49,7 +49,7 @@ class Piece extends Model
 
     public function getStubAttribute()
     {
-        return Storage::url('');
+        return config('filesystems.disks.' . config('filesystems.default') . '.url');
     }
 
     public static function getNewHash(): String
@@ -112,12 +112,47 @@ class Piece extends Model
 
     public function addImage($file, $hash, $ext)
     {
-        $dir = $ext === 'jpg' ? 'uncompressed' : 'compressed';
+        $dir = 'hashed_' . ($ext === 'jpg' ? 'uncompressed' : 'compressed');
 
         Storage::put("$dir/$hash.$ext", file_get_contents($file));
 
         // Remove existing image
         if (!empty($this->hash))
             Storage::delete("$dir/$this->hash.$ext");
+    }
+
+    public function handleChildren($request, $children)
+    {
+        $existing = $this->children()->pluck('id')->toArray();
+        $remaining = [];
+
+        foreach($children as $id => $child) {
+            $has_images = $request->hasFile("children.$id.compressed") && $request->hasFile("children.$id.uncompressed");          
+            if ($has_images)
+                $child['hash'] = $this->getNewHash();
+
+            // Create new
+            if (strstr($id, 'new')) {
+                $child['parent_id'] = $this->id;
+                $c = $this->create($child);
+            }
+            // Update existing
+            else {
+                $remaining[] = $id;
+                $c = $this->findOrFail($id);
+                $c->update($child);
+            }
+            
+            if ($has_images) {
+                $uncompressed = $request->file("children.$id.uncompressed");
+                $compressed = $request->file("children.$id.compressed");
+
+                $c->addImage($uncompressed, $child['hash'], 'jpg');
+                $c->addImage($compressed, $child['hash'], 'webp');
+            }
+        }
+
+        $deleted = array_diff($existing, $remaining);
+        $this->whereIn('id', $deleted)->delete();
     }
 }

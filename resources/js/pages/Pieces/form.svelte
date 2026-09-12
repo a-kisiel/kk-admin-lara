@@ -1,4 +1,5 @@
-<script lang="ts">    
+<script lang="ts">
+    import AppHead from '@/components/AppHead.svelte';
     import * as Field from "@/components/ui/field/index.js";
     import { Input } from "@/components/ui/input/index.js";
     import { Switch } from '@/components/ui/switch';
@@ -9,7 +10,7 @@
         TooltipTrigger,
     } from "@/components/ui/tooltip";
 
-    import MultiSelect from 'svelte-multiselect'
+    import MultiSelect from 'svelte-multiselect';
 
     import { Image, Info } from "lucide-svelte";
 
@@ -28,18 +29,29 @@
 
     let form = $state(piece ?? {});
 
-    let imageURL = $state(piece?.hash ? `${imgUrl}compressed/${piece.hash}.webp` : '');
+    let imageURL = $state(piece?.hash ? `${imgUrl}hashed_compressed/${piece.hash}.webp` : '');
+
     let children = $state(piece?.children ?? []);
 
     let formValid = $derived(mode === 'edit' || form && form.title && (form.hash || imageURL !== ''));
 
-    let selectedMedia = $state([]);
+    let selectedMedia = $state(new Array());
     form.media?.forEach((m: any) => selectedMedia.push({value: m.id, label: m.title}));
-    let selectedCollections = $state([]);
+    let selectedCollections = $state(new Array());
     form.collections?.forEach((c: any) => selectedCollections.push({value: c.id, label: c.title}))
 
+    let addIndex = $state(children.length ?? 0);
     function addChild(data: any) {
         children.push(data);
+        addIndex++;
+    }
+
+    function updateChild(index: number, data: any) {
+        children[index] = data;
+        if (data.compressed && data.uncompressed) {
+            children[index].compressed = data.compressed.files;
+            children[index].uncompressed = data.uncompressed.files;
+        }
     }
 
     function deleteChild(index: number) {
@@ -48,8 +60,12 @@
 
     function updateImage(data: any) {
         imageURL = data.url;
+        form.compressed = data.compressed.files;
+        form.uncompressed = data.uncompressed.files;
     }
 </script>
+
+<AppHead title={form.title ?? 'New Piece'} />
 
 <div>
     <ItemHeader
@@ -80,6 +96,21 @@
                         {updateImage}
                     />
                     {/if}
+
+                    {#if form.compressed}
+                        <input hidden
+                            name="main_compressed"
+                            type="file"
+                            files={form.compressed}
+                        >
+                    {/if}
+                    {#if form.uncompressed}
+                        <input hidden
+                            name="main_uncompressed"
+                            type="file"
+                            files={form.uncompressed}
+                        >
+                    {/if}
                 </div>
                 {:else}
                 <div class="main-preview default-image">
@@ -95,19 +126,28 @@
                    {#if children}
                     {#each children as child, index (child.id)}
                     <PieceModal
-                        parent={form}
                         piece={child}
                         index={index}
                         mode={mode}
                         imageUrl={imgUrl}
+                        {updateChild}
                         {deleteChild}
                     />
+                        {#if mode !== 'show'}
+                        <input hidden name={`children[${child.id}][title]`} value={child.title} type="text">
+                        <input hidden name={`children[${child.id}][description]`} value={child.description} type="text">
+                        <input hidden name={`children[${child.id}][start_date]`} value={child.start_date} type="text">
+                        <input hidden name={`children[${child.id}][end_date]`} value={child.end_date} type="text">
+                        <input hidden name={`children[${child.id}][active]`} value={+child.active} type="text">
+                        <input hidden name={`children[${child.id}][hash]`} value={child.hash} type="text">
+                        <!-- <input hidden name={`children[${child.id}][uncompressed]`} value={child.uncompressed} type="file">
+                        <input hidden name={`children[${child.id}][compressed]`} value={child.compressed} type="file"> -->
+                        {/if}
                     {/each}
                     {/if}
                     {#if mode !== 'show' && formValid}
                     <PieceModal
-                        parent={form}
-                        index={children.length}
+                        index={addIndex}
                         mode={mode}
                         imageUrl={imgUrl}
                         {addChild}

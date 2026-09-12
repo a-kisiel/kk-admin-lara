@@ -34,14 +34,14 @@
             <a
                 href="/pieces/{piece.id}"
                 class="carousel-item"
-                style="{piece.hash ? `background-image: url(${piece.stub}compressed/${piece.hash}.webp);` : ''}"
+                style="{piece.hash ? `background-image: url(${piece.stub}hashed_compressed/${piece.hash}.webp);` : ''}"
                 title={piece.title}
             ></a>
             {#each piece.children as child}
             <a
                 href="/pieces/{piece.id}"
                 class="carousel-item {child.hash ? '' : 'default-image'}"
-                style="{child.hash ? `background-image: url(${piece.stub}compressed/${child.hash}.webp);` : ''}"
+                style="{child.hash ? `background-image: url(${piece.stub}hashed_compressed/${child.hash}.webp);` : ''}"
                 title={child.title}
             >
                 {#if !child.hash}

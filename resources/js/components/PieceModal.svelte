@@ -17,15 +17,14 @@
     import { Image, SquarePlus } from "lucide-svelte";
     import { toast } from "svelte-sonner";
     import Dropzone from "./Dropzone.svelte";
-    import Spinner from "./ui/spinner/Spinner.svelte";
 
     let {
-        parent,
         piece = $bindable(),
         index = $bindable(),
         mode = '',
         imageUrl,
         addChild = () => {},
+        updateChild = () => {},
         deleteChild = () => {}
     } = $props();
 
@@ -37,10 +36,10 @@
         description: piece?.description,
         start_date: piece?.start_date,
         end_date: piece?.end_date,
-        active: +piece?.active,
-        compressed: new DataTransfer(),
-        uncompressed: new DataTransfer(),
-        hash: piece?.hash ?? ''
+        active: !!piece?.active,
+        hash: piece?.hash ?? '',
+        compressed: null,
+        uncompressed: null
     });
 
     let imgUrl = $state(form.hash ? `${imageUrl}compressed/${form.hash}.webp` : '');
@@ -51,35 +50,18 @@
 
     let open = $state(false);
     let deleteOpen = $state(false);
-    let saving = $state(false);
-    let deleting = $state(false);
+
+    let formIdentifier = $derived(piece?.id ?? `new_${index}`);
 
     async function deleteItem() {
-        deleting = true;
-
-        const res = await fetch(`/api/pieces/${piece.id}/delete`);
         deleteChild(index);
-
-        deleting = false;
         deleteOpen = false;
-
-        if (res.status === 200) {
-            toast.success('Deletion successful');
-            open = false;
-        }
-        else {
-            toast.error('Error deleting -- try again');
-        }
     }
 
     function updateImage(data: any) {
-        form.compressed = new DataTransfer();
-        form.uncompressed = new DataTransfer();
-
-        Array.from(data.uncompressed.files).forEach((f: File) => form.uncompressed.items.add(f));
-        Array.from(data.compressed.files).forEach((f: File) => form.compressed.items.add(f));
-        
         imgUrl = data.url;
+        form.compressed = data.compressed.files;
+        form.uncompressed = data.uncompressed.files;
     }
 
     async function save()
@@ -87,68 +69,27 @@
         const data = $state.snapshot(form);
         initial = data;
 
-        // Set up files
-        const fd = new FormData();
-        Object.keys(data).forEach(k => {
-            if (k !== 'compressed' && k !== 'uncompressed')
-                fd.append(k, data[k] ?? '');
-        });
+        if (!form.title)
+            return;
 
-        if (data.compressed.files[0] && data.uncompressed.files[0]) {
-            fd.append('compressed', data.compressed.files[0]);
-            fd.append('uncompressed', data.uncompressed.files[0]);
-        }
-
-        let parentID = parent.id ?? null;
-        // If parent doesn't exist yet, create it with only the title
-        if (!parent.id) {
-            const p = $state.snapshot(parent);
-            const pfd = new FormData();
-            Object.keys(p).forEach(k => pfd.append(k, p[k]));
-            const cRes = await fetch('/api/pieces/create', {
-                'method': 'POST',
-                'body': pfd
-            });
-            const created = await cRes.json();
-            parentID = created.id;
-        }
-
-        const url = piece ?
-            `/api/pieces/${piece.id}/update` :
-            `/api/pieces/${parentID}/add-child`;
-
-        const res = await fetch(url, {
-            'method': 'POST',
-            'body': fd,
-        });
-
-        const status = res.status;
-
-        // Image was created -- add to parent's children
         if (!piece) {
-            const c = await res.json();
-            addChild(c);
+            data.id = `new_${index}`;
+            addChild(data);
+            form = {
+                id: '',
+                title: '',
+                description: '',
+                start_date: '',
+                end_date: '',
+                active: true,
+                hash: '',
+                compressed: null,
+                uncompressed: null
+            };
         }
-
-        if (status === 200 || status === 201) {
-            toast.success('Saved');
-            open = false;
-        } else {
-            console.log(status)
-            toast.error('There was an error saving -- try again');
+        else {
+            updateChild(index, data);
         }
-    }
-
-    function closeModal() {
-        const data = $state.snapshot(form);
-        let changed = false;
-        Object.keys(data).forEach(k => {
-            if (form[k] != initial[k])
-                changed = true;
-        });
-        
-        if (changed)
-            toast.info("Your changes in the popup will not be saved unless you hit save in the popup");
 
         open = false;
     }
@@ -158,7 +99,7 @@
 <div class="piece-popup">
     <Dialog.Root bind:open>
         <Dialog.Trigger>
-            {#if form.hash}
+            {#if form.hash || imgUrl}
             <Tooltip>
                 <TooltipTrigger>
                     <div
@@ -171,6 +112,20 @@
                 <TooltipContent>
                     {form.title}
                 </TooltipContent>
+                {#if form.compressed}
+                <input hidden
+                    name={`children[${form.id}][compressed]`}
+                    files={form.compressed}
+                    type="file"
+                >
+                {/if}
+                {#if form.uncompressed}
+                <input hidden
+                    name={`children[${form.id}][uncompressed]`}
+                    files={form.uncompressed}
+                    type="file"
+                >
+                {/if}
             </Tooltip>
             {:else if piece}
             <Tooltip>
@@ -230,11 +185,11 @@
                     <div class="image-form">
                         <Field.Group>
                             <Field.Set>
-                                <Label for="{index}_title">Title</Label>
+                                <Label for="{formIdentifier}_title">Title</Label>
                                 {#if mode !== 'show'}
                                 <Input
-                                    id="{index}_title"
-                                    name="children[{index}][title]"
+                                    id="{formIdentifier}_title"
+                                    name="children[{formIdentifier}][title]"
                                     bind:value={form.title}
                                 />
                                 {#if errors['title']}
@@ -245,11 +200,11 @@
                                 {/if}
                             </Field.Set>
                             <Field.Set>
-                                <Label for="{index}_description">Description</Label>
+                                <Label for="{formIdentifier}_description">Description</Label>
                                 {#if mode !== 'show'}
                                 <Textarea
-                                    id="{index}_description"
-                                    name="children[{index}][description]"
+                                    id="{formIdentifier}_description"
+                                    name="children[{formIdentifier}][description]"
                                     bind:value={form.description}
                                 />
                                 {:else}
@@ -257,11 +212,11 @@
                                 {/if}
                             </Field.Set>
                             <Field.Set>
-                                <Label for="{index}_start_date">Start Date</Label>
+                                <Label for="{formIdentifier}_start_date">Start Date</Label>
                                 {#if mode !== 'show'}
                                 <Input
-                                    id="{index}_start_date"
-                                    name="children[{index}][start_date]"
+                                    id="{formIdentifier}_start_date"
+                                    name="children[{formIdentifier}][start_date]"
                                     bind:value={form.start_date}
                                 />
                                 {:else}
@@ -269,11 +224,11 @@
                                 {/if}
                             </Field.Set>
                             <Field.Set>
-                                <Label for="{index}_end_date">End Date</Label>
+                                <Label for="{formIdentifier}_end_date">End Date</Label>
                                 {#if mode !== 'show'}
                                 <Input
-                                    id="{index}_end_date"
-                                    name="children[{index}][end_date]"
+                                    id="{formIdentifier}_end_date"
+                                    name="children[{formIdentifier}][end_date]"
                                     bind:value={form.end_date}
                                 />
                                 {:else}
@@ -292,21 +247,12 @@
                                 {form.active ? 'Yes' : 'No'}
                                 {/if}
                             </Field.Set>
-                            <!-- <Field.Set>
-                                <Field.Legend>Image File</Field.Legend>
-                                <Input
-                                    id="file-{index}"
-                                    name="children[{index}][file]"
-                                    bind:files={form.file}
-                                    type="file"
-                                />
-                            </Field.Set> -->
                             <Field.Set>
-                                <Label for="{index}_hash">Hash</Label>
+                                <Label for="{formIdentifier}_hash">Hash</Label>
                                 {#if mode !== 'show'}
                                 <Input
-                                    id="{index}_hash"
-                                    name="children[{index}][hash]"
+                                    id="{formIdentifier}_hash"
+                                    name="children[{formIdentifier}][hash]"
                                     bind:value={form.hash}
                                 />
                                 {:else}
@@ -318,7 +264,7 @@
                 </div>
             <Dialog.Footer style="display: flex; justify-content: space-between">
                 <div>
-                    {#if index !== 'new' && mode !== 'show'}
+                    {#if piece && mode !== 'show'}
                     <AlertDialog.Root bind:open={deleteOpen}>
                         <AlertDialog.Trigger>
                             <Button onclick={() => deleteOpen = true} variant="destructive">
@@ -335,11 +281,8 @@
                             </AlertDialog.Header>
                             <AlertDialog.Footer>
                                 <AlertDialog.Cancel variant='ghost'>Cancel</AlertDialog.Cancel>
-                                    <Button onclick={deleteItem} variant="destructive" disabled={deleting}>
+                                    <Button onclick={deleteItem} variant="destructive">
                                         Delete
-                                        {#if deleting}
-                                        <Spinner />
-                                        {/if}
                                     </Button>
                             </AlertDialog.Footer>
                         </AlertDialog.Content>
@@ -347,15 +290,9 @@
                     {/if}
                 </div>
                 <div>
-                    <Dialog.Close onclick={closeModal}>
-                        <Button variant="ghost" style="margin-right: 5px;">Close</Button>
-                    </Dialog.Close>
                     {#if mode !== 'show'}
-                    <Button onclick={save} disabled={saving}>
-                        Save
-                        {#if saving}
-                        <Spinner />
-                        {/if}
+                    <Button onclick={save}>
+                        Close
                     </Button>
                     {/if}
                 </div>                

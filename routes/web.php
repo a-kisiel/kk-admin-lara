@@ -49,6 +49,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::prefix('/api')->group(function() {
+        Route::post('/rebuild-db', [APIDashboardController::class, 'rebuildDB']);
+
         Route::prefix('/pieces')->group(function() {
             Route::post('/create', [APIPieceController::class, 'create']);
             Route::post('/{id}/add-child', [APIPieceController::class, 'addChild']);

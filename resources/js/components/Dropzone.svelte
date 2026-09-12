@@ -20,8 +20,6 @@
     let compressed = $state(new DataTransfer());
     let uncompressed = $state(new DataTransfer());
 
-    let cFiles = $derived(compressed.files);
-
     let converting = $state(false);
 
     async function convert(file: File, format: String) {
@@ -50,11 +48,13 @@
                         URL.revokeObjectURL(url);
 
                         const result = new Blob([new Uint8Array(arr)], {type: `image/${format}`});
-                        const filename = format === 'webp' ? 'compressed.webp' : 'uncompressed.jpg';
+                        const filename = format === 'webp' ? 'compressed.webp' : 'uncompressed.jpeg';
 
                         toast.success(`Successfully created a ${format} version`);
 
-                        resolve(new File([result], filename));
+                        resolve(new File([result], filename, {
+                            type: `image/${format}`
+                        }));
                     };
                 };
             } catch (e) {
@@ -72,7 +72,7 @@
         const type = pendingFile.type.toLowerCase();
 
         if (!['image/png', 'image/jpg', 'image/jpeg', 'image/webp'].includes(type)) {
-            toast.info('File should be a png, jpg, or webp');
+            toast.info('File should be a png, jpeg, or webp');
             pendingFile = null;
             confirmOverwriteOpen = false;
             return;
@@ -92,7 +92,7 @@
 
         converting = true;
 
-        uncompressed.items.add(await convert(pendingFile, 'jpg'));
+        uncompressed.items.add(await convert(pendingFile, 'jpeg'));
         compressed.items.add(await convert(pendingFile, 'webp'));
 
         const newComp = new DataTransfer();
@@ -109,11 +109,13 @@
             '';
 
         updateImage({
+            index,
             uncompressed,
             compressed,
             url: imageURL
         });
 
+        confirmOverwriteOpen = false;
         converting = false;
         maskClasses = '';
 
@@ -129,7 +131,7 @@
 </script>
 
 <div class="image-mask {maskClasses}">
-    {#each cFiles as file}
+    {#each compressed.files as file}
     - {file.name}(c)<br/>
     {/each}
     <Dropzone 
@@ -145,15 +147,10 @@
             {:else}
             Click or Drop a file here
             {/if}
-            <!-- <input hidden
-                name="{index}_compressed"
-                type="file"
-                files={compressed.files}
-            > -->
             <input hidden
                 name="{index}_compressed"
                 type="file"
-                bind:files={cFiles}
+                files={compressed.files}
             >
             <input hidden
                 name="{index}_uncompressed"
