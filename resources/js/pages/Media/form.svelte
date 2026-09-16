@@ -1,6 +1,14 @@
 <script lang="ts">    
     import * as Field from "@/components/ui/field/index.js";
     import { Input } from "@/components/ui/input/index.js";
+    import { Switch } from '@/components/ui/switch';
+    import {
+        Tooltip,
+        TooltipContent,
+        TooltipTrigger,
+    } from "@/components/ui/tooltip";
+
+    import { Info } from "lucide-svelte";
 
     import ItemHeader from '@/components/ItemHeader.svelte';
     import FormButtons from '@/components/FormButtons.svelte';
@@ -36,6 +44,29 @@
                         {:else}
                         {form.title}
                         {/if}
+                </Field.Set>
+                <Field.Set>
+                    <Field.Legend>
+                        <span class="field-clarification">
+                            Support Medium
+                            <Tooltip>
+                                <TooltipTrigger><Info class="icon" /></TooltipTrigger>
+                                <TooltipContent>
+                                    Dictates whether this medium is something you paint/draw on, rather than with (e.g. canvas, linen, etc.)
+                                </TooltipContent>
+                            </Tooltip>
+                        </span>
+                    </Field.Legend>
+                    {#if mode !== 'show'}
+                    <Switch
+                        id="is_support"
+                        name="is_support"
+                        bind.value={!!form.is_support}
+                        checked={form ? form.is_support : false}
+                    />
+                    {:else}
+                    {form.is_support ? 'Yes' : 'No'}
+                    {/if}
                 </Field.Set>
                 <FormButtons
                     mode={mode}

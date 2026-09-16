@@ -9,6 +9,7 @@
         TooltipContent,
         TooltipTrigger,
     } from "@/components/ui/tooltip";
+    import * as Select from "@/components/ui/select/index.js";
 
     import MultiSelect from 'svelte-multiselect';
 
@@ -24,6 +25,7 @@
         mode,
         piece = $bindable(),
         media = [],
+        supportMedia = [],
         collections = []
     } = $props();
 
@@ -38,7 +40,8 @@
     let selectedMedia = $state(new Array());
     form.media?.forEach((m: any) => selectedMedia.push({value: m.id, label: m.title}));
     let selectedCollections = $state(new Array());
-    form.collections?.forEach((c: any) => selectedCollections.push({value: c.id, label: c.title}))
+    form.collections?.forEach((c: any) => selectedCollections.push({value: c.id, label: c.title}));
+    let selectedSupportMedium = $derived(supportMedia.find((m) => m.value == form.support_id));
 
     let addIndex = $state(children.length ?? 0);
     function addChild(data: any) {
@@ -170,6 +173,18 @@
                     {/if}
                 </Field.Set>
                 <Field.Set>
+                    <Field.Legend>Dimensions</Field.Legend>
+                    {#if mode !== 'show'}
+                    <Input
+                        id="dimensions"
+                        name="dimensions"
+                        bind:value={form.dimensions}
+                    />
+                    {:else}
+                    {form.dimensions}
+                    {/if}
+                </Field.Set>
+                <Field.Set>
                     <Field.Legend>Description</Field.Legend>
                     {#if mode !== 'show'}
                     <Textarea
@@ -200,7 +215,8 @@
                         <Input
                             id="end_date"
                             name="end_date"
-                            bind.value={form.end_date}
+                            value={form.end_date}
+                            on:input={(e) => (form.end_date = e.currentTarget.value)}
                         />
                         {:else}
                         {form.end_date}
@@ -220,6 +236,25 @@
                             <li><a href="/media/{medium.id}">{medium.title}</a></li>
                             {/each}
                         </ul>
+                        {/if}
+                </Field.Set>
+                <Field.Set>
+                    <Field.Legend>Support Medium</Field.Legend>
+                        {#if mode !== 'show'}
+                        <Select.Root
+                            name="support_id"
+                            bind:value={form.support_id}
+                            type="single"
+                        >
+                            <Select.Trigger class="w-[180px]">{selectedSupportMedium?.label}</Select.Trigger>
+                            <Select.Content>
+                            {#each supportMedia as option}
+                            <Select.Item value={option.value}>{option.label}</Select.Item>
+                            {/each}
+                            </Select.Content>
+                        </Select.Root>
+                        {:else}
+                        {form.support_medium?.title}
                         {/if}
                 </Field.Set>
                 <Field.Set>
@@ -243,7 +278,7 @@
                     <Switch
                         id="active"
                         name="active"
-                        bind.value={form.active}
+                        bind.value={!!form.active}
                         checked={form ? form.active : true}
                     />
                     {:else}
@@ -256,23 +291,37 @@
                     <Switch
                         id="is_wallpaper"
                         name="is_wallpaper"
-                        bind.value={form.is_wallpaper}
+                        bind.value={!!form.is_wallpaper}
                         checked={form?.is_wallpaper}
                     />
                     {:else}
                     {form.is_wallpaper ? 'Yes' : 'No'}
                     {/if}
                 </Field.Set>
-                {#if mode !== 'show'}
-                <!-- <Field.Set>
-                    <Field.Legend>Image File</Field.Legend>
+                <Field.Set>
+                    <Field.Legend>
+                        <span class="field-clarification">
+                            Location
+                            {#if mode !== 'show'}
+                            <Tooltip>
+                                <TooltipTrigger><Info class="icon" /></TooltipTrigger>
+                                <TooltipContent>
+                                    Purely internal field to track the state/physical location of Pieces
+                                </TooltipContent>
+                            </Tooltip>
+                            {/if}
+                        </span>
+                    </Field.Legend>
+                    {#if mode !== 'show'}
                     <Input
-                        id="file"
-                        name="file"
-                        type="file"
+                        id="location"
+                        name="location"
+                        bind:value={form.location}
                     />
-                </Field.Set> -->
-                {/if}
+                    {:else}
+                    {form.location}
+                    {/if}
+                </Field.Set>
                 <Field.Set>
                     <Field.Legend>
                         <span class="field-clarification">

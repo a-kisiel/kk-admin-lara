@@ -178,7 +178,17 @@
 
 .list-top-bar {
     display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 24px;
+
+    .filter-section {
+      display: flex;
+
+      .filter-wrap {
+        margin-right: 10px;
+      }
+    }
 
     .list-add {
         display: flex;

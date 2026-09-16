@@ -14,9 +14,12 @@ class Piece extends Model
     public $fillable = [
         'title',
         'description',
+        'dimensions',
         'hash',
+        'location',
         'start_date',
         'end_date',
+        'support_id',
         'active',
         'is_wallpaper',
         'parent_id',
@@ -35,6 +38,11 @@ class Piece extends Model
     public function media()
     {
         return $this->belongsToMany(Medium::class, 'piece_media');
+    }
+
+    public function supportMedium()
+    {
+        return $this->belongsTo(Medium::class, 'support_id');
     }
 
     public function collections()

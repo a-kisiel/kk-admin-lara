@@ -20,18 +20,31 @@ class PieceController extends Controller
 {
     public function index(Request $request): Response
     {
-        $sort = $request->input('sort');
+        $params = $request->all();
+
+        if (empty($params['page']))
+            $params['page'] = 1;
+        if (empty($params['sort']))
+            $params['sort'] = 'alphabetical';
 
         $query = Piece::with(['media', 'collections', 'children'])
             ->whereNull('parent_id');
 
-        if (!empty($sort)) {
-            if ($sort === 'recent')
-                $query->orderBy('created_at', 'desc');
-            elseif ($sort === 'alphabetical')
-                $query->orderBy('title', 'asc');
+        if (!empty($params['is_active'])) {
+            $a = $params['is_active'] === 'yes';
+            $query->where('active', $a);
         }
-        else
+
+        if (!empty($params['is_wallpaper'])) {
+            $w = $params['is_wallpaper'] === 'yes';
+            $query->where('is_wallpaper', $w);
+        }
+
+        if ($params['sort'] === 'first')
+            $query->orderBy('created_at', 'asc');
+        elseif ($params['sort'] === 'latest')
+            $query->orderBy('created_at', 'desc');
+        elseif ($params['sort'] === 'alphabetical')
             $query->orderBy('title', 'asc');
         
         $pieces = $query->paginate(20);
@@ -58,9 +71,8 @@ class PieceController extends Controller
 
         return Inertia::render('Pieces/index', [
             'pieces' => $pieces,
-            'sort' => $sort,
-            'page' => $request->query('page') ?? 1,
             'total_pieces' => $total_pieces,
+            'params' => $params,
             'media' => $media,
             'collections' => $collections
         ]);
@@ -93,7 +105,7 @@ class PieceController extends Controller
 
     public function show($id): Response
     {
-        $piece = Piece::with(['media', 'collections', 'children'])
+        $piece = Piece::with(['media', 'collections', 'children', 'supportMedium'])
             ->findOrFail($id);
         return Inertia::render('Pieces/form', [
             'imgUrl' => config('filesystems.disks.' . config('filesystems.default') . '.url'),
@@ -104,16 +116,21 @@ class PieceController extends Controller
 
     public function edit($id): Response
     {
-        $piece = Piece::with(['media', 'collections', 'children'])
+        $piece = Piece::with(['media', 'collections', 'children', 'supportMedium'])
             ->findOrFail($id);
 
-        $media = [];
+        $media = 
+        $support_media = [];
         $all_media = Medium::all();
-        foreach($all_media as $medium)
-            $media[] = [
+        foreach($all_media as $medium) {
+            $m = [
                 'label' => $medium->title,
                 'value' => $medium->id
             ];
+            $medium->is_support ?
+                $support_media[] = $m :
+                $media[] = $m;
+        }
 
         $collections = [];
         $all_collections = Collection::all();
@@ -127,6 +144,7 @@ class PieceController extends Controller
             'imgUrl' => config('filesystems.disks.' . config('filesystems.default') . '.url'),
             'piece' => $piece,
             'media' => $media,
+            'supportMedia' => $support_media,
             'collections' => $collections
         ]);
     }

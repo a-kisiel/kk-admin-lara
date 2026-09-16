@@ -6,25 +6,31 @@
     import * as Select from "@/components/ui/select/index.js";
     import * as Pagination from "@/components/ui/pagination/index.js";
     
-    const props = $derived(page.props);
-
     const sortOptions = [
         {value: 'alphabetical', label: 'Alphabetical'},
-        {value: 'recent', label: 'Recent'}
+        {value: 'latest', label: 'Latest First'},
+        {value: 'first', label: 'Oldest First'}
     ];
 
-    function setSort(v: string) {
-        const params = new URLSearchParams();
-        params.set('sort', `${v}`);
-        params.delete('page');
-        window.history.replaceState(null, '', '?' + params.toString());
-        window.location.reload();
-    }
+    const binaryOptions = [
+        {value: 'yes', label: 'Yes'},
+        {value: 'no', label: 'No'}
+    ];
 
-    function setCurrentPage(p: number) {
-        const params = new URLSearchParams();
-        params.set('page', `${p}`);
-        window.history.replaceState(null, '', '?' + params.toString());
+    const props = $derived(page.props);
+    const selectedSort = $derived(sortOptions.find(o => o.value === props.params.sort));
+    const selectedWallpaper = $derived(binaryOptions.find(o => o.value === props.params.is_wallpaper));
+    const selectedActive = $derived(binaryOptions.find(o => o.value === props.params.is_active));
+
+    function setParam(key: string, value: any) {
+        const url = new URL(window.location.href);
+
+        if (['sort', 'is_wallpaper', 'is_active'].includes(key))
+            url.searchParams.delete('page');
+        
+        url.searchParams.set(key, value);
+        window.history.pushState({}, '', url);
+        
         window.location.reload();
     }
 
@@ -38,14 +44,53 @@
     >
         <div class="list-top-bar">
             <div class="filter-section">
-                <Select.Root onValueChange={e => setSort(e)} bind:value={props.sort} type="single">
-                    <Select.Trigger class="w-[180px]">{props.sort}</Select.Trigger>
-                    <Select.Content>
-                    {#each sortOptions as option}
-                    <Select.Item value={option.value} >{option.label}</Select.Item>
-                    {/each}
-                    </Select.Content>
-                </Select.Root>
+                <div class="filter-wrap">
+                    <span>Sort</span>
+                    <Select.Root
+                        onValueChange={e => setParam('sort', e)}
+                        bind:value={props.params.sort}
+                        type="single"
+                    >
+                        <Select.Trigger class="w-[180px]">{selectedSort?.label}</Select.Trigger>
+                        <Select.Content>
+                        {#each sortOptions as option}
+                            <Select.Item value={option.value} >{option.label}</Select.Item>
+                        {/each}
+                        </Select.Content>
+                    </Select.Root>
+                </div>
+                <div class="filter-wrap">
+                    <span>Is Active</span>
+                    <Select.Root
+                        onValueChange={e => setParam('is_active', e)}
+                        bind:value={props.params.is_active}
+                        type="single"
+                    >
+                        <Select.Trigger class="w-[180px]">{selectedActive?.label}</Select.Trigger>
+                        <Select.Content>
+                            <Select.Item value="">&nbsp;</Select.Item>
+                        {#each binaryOptions as option}
+                            <Select.Item value={option.value} >{option.label}</Select.Item>
+                        {/each}
+                        </Select.Content>
+                    </Select.Root>
+                </div>
+                <div class="filter-wrap">
+                    <span>Is Wallpaper</span>
+                    <Select.Root
+                        onValueChange={e => setParam('is_wallpaper', e)}
+                        bind:value={props.params.is_wallpaper}
+                        type="single"
+                    >
+                        <Select.Trigger class="w-[180px]">{selectedWallpaper?.label}</Select.Trigger>
+                        <Select.Content>
+                            <Select.Item value="">&nbsp;</Select.Item>
+                        {#each binaryOptions as option}
+                            <Select.Item value={option.value} >{option.label}</Select.Item>
+                        {/each}
+                        </Select.Content>
+                    </Select.Root>
+                </div>
             </div>
             <a href="/pieces/add" class="list-add">
                 Add Piece <Plus />
@@ -75,9 +120,9 @@
                     {:else}
                     <Pagination.Item>
                         <Pagination.Link
-                            onclick={(e) => {e.preventDefault(); setCurrentPage(page.value);}}
+                            onclick={(e) => {e.preventDefault(); setParam('page', page.value);}}
                             {page}
-                            isActive={+props.page === page.value}
+                            isActive={+props.params.page === page.value}
                         >
                         {page.value}
                         </Pagination.Link>

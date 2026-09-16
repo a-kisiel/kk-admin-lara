@@ -17,14 +17,31 @@
                 Add Medium <Plus />
             </a>
         </div>
-        <div class="list">
-            {#each props.media as medium}
-            <div class="item">
-                <a href="{`/media/${medium.id}`}">{medium.title}</a> ({medium.pieces_count})
+        <div style="display: flex;">
+            <div style="margin-left: 10px;">
+                <h2>Main Media</h2>
+                <div class="list">
+                    {#each props.media as medium}
+                    <div class="item">
+                        <a href="{`/media/${medium.id}`}">{medium.title}</a> ({medium.pieces_count})
+                    </div>
+                    {:else}
+                    <div class="list-else">No media yet.</div>
+                    {/each}
+                </div>
             </div>
-            {:else}
-            <div class="list-else">No media yet.</div>
-            {/each}
+            <div>
+                <h2>Support Media</h2>
+                <div class="list">
+                    {#each props.support_media as medium}
+                    <div class="item">
+                        <a href="{`/media/${medium.id}`}">{medium.title}</a> ({medium.support_pieces_count})
+                    </div>
+                    {:else}
+                    <div class="list-else">No support media yet.</div>
+                    {/each}
+                </div>
+            </div>
         </div>
     </div>
 </div>

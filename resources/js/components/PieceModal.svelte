@@ -42,7 +42,7 @@
         uncompressed: null
     });
 
-    let imgUrl = $state(form.hash ? `${imageUrl}compressed/${form.hash}.webp` : '');
+    let imgUrl = $state(form.hash ? `${imageUrl}hashed_compressed/${form.hash}.webp` : '');
 
     let initial = $state.snapshot(form);
 

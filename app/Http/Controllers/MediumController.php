@@ -13,10 +13,19 @@ class MediumController extends Controller
 {
     public function index(): Response
     {
-        $media = Medium::withCount('pieces')->get();
+        $all = Medium::withCount(['pieces', 'supportPieces'])->get();
+
+        $media =
+        $support_media = [];
+
+        foreach($all as $medium)
+            $medium->is_support ?
+                $support_media[] = $medium :
+                $media[] = $medium;
 
         return Inertia::render('Media/index', [
-            'media' => $media
+            'media' => $media,
+            'support_media' => $support_media
         ]);
     }
 
