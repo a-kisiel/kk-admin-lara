@@ -1,17 +1,14 @@
 <script lang="ts">
     import AppHead from '@/components/AppHead.svelte';
     import * as Field from "@/components/ui/field/index.js";
-    import { Button } from "@/components/ui/button/index.js";
     import { Input } from "@/components/ui/input/index.js";
     import { Switch } from '@/components/ui/switch';
     import { Textarea } from '@/components/ui/textarea';
-    import Spinner from '@/components/ui/spinner/Spinner.svelte';
     import {
         Tooltip,
         TooltipContent,
         TooltipTrigger,
     } from "@/components/ui/tooltip";
-    import * as Select from "@/components/ui/select/index.js";
 
     import MultiSelect from 'svelte-multiselect';
 
@@ -22,35 +19,25 @@
     import FormButtons from '@/components/FormButtons.svelte';
     import Dropzone from "@/components/Dropzone.svelte";
 
-    import { toast } from 'svelte-sonner';
-
     let {
         imgUrl,
         mode,
-        piece = $bindable(),
-        media = [],
-        supportMedia = [],
-        collections = []
+        book = $bindable(),
+        media = []
     } = $props();
 
-    let form = $state(piece ?? {});
+    let form = $state(book ?? {});
 
-    let imageURL = $state(piece?.hash ? `${imgUrl}hashed_compressed/${piece.hash}.webp` : '');
+    let imageURL = $state(book?.hash ? `${imgUrl}books/compressed/${book.hash}.webp` : '');
 
-    let children = $state(piece?.children ?? []);
-
-    let generatingThumbnails = $state(false);
+    let children = $state(book?.children ?? []);
 
     let formValid = $derived(mode === 'edit' || form && form.title && (form.hash || imageURL !== ''));
 
     let selectedMedia = $state(new Array());
     form.media?.forEach((m: any) => selectedMedia.push({value: m.id, label: m.title}));
-    let selectedCollections = $state(new Array());
-    form.collections?.forEach((c: any) => selectedCollections.push({value: c.id, label: c.title}));
-    let selectedSupportMedium = $derived(supportMedia.find((m) => m.value == form.support_id));
 
     let addIndex = $state(children.length ?? 0);
-
     function addChild(data: any) {
         children.push(data);
         addIndex++;
@@ -73,26 +60,15 @@
         form.compressed = data.compressed.files;
         form.uncompressed = data.uncompressed.files;
     }
-
-    async function generateThumbnails() {
-        generatingThumbnails = true;
-        const res = await fetch(`/api/pieces/${form.id}/generate-thumbnails`);
-        if (res.status === 200) {
-            toast.success("Successfully generated thumbnail for the main image");
-        } else {
-            toast.error("Something went wrong...don't try again, because this costs money if you do it enough -- tell Alex");
-        }
-        generatingThumbnails = false;
-    }
 </script>
 
-<AppHead title={form.title ?? 'New Piece'} />
+<AppHead title={form.title ?? 'New Book'} />
 
 <div>
     <ItemHeader
         item={form}
-        type='pieces'
-        label='Piece'
+        type='books'
+        label='Book'
         mode={mode}
     />
     
@@ -151,6 +127,7 @@
                         index={index}
                         mode={mode}
                         imageUrl={imgUrl}
+                        type="book"
                         {updateChild}
                         {deleteChild}
                     />
@@ -161,32 +138,19 @@
                         <input hidden name={`children[${child.id}][end_date]`} value={child.end_date} type="text">
                         <input hidden name={`children[${child.id}][active]`} value={+child.active} type="text">
                         <input hidden name={`children[${child.id}][hash]`} value={child.hash} type="text">
-                        <!-- <input hidden name={`children[${child.id}][uncompressed]`} value={child.uncompressed} type="file">
-                        <input hidden name={`children[${child.id}][compressed]`} value={child.compressed} type="file"> -->
                         {/if}
                     {/each}
                     {/if}
-                    {#if mode !== 'show' && formValid}
+                    {#if mode !== 'show'}
                     <PieceModal
                         index={addIndex}
                         mode={mode}
                         imageUrl={imgUrl}
+                        type="book"
                         {addChild}
                     />
                     {/if}
                 </div>
-
-                {#if mode === 'edit'}
-                <div style="margin-top: 20px;">
-                    <Button disabled={generatingThumbnails} onclick={generateThumbnails}>
-                        {#if generatingThumbnails}
-                        Generating Thumbnails... <Spinner />
-                        {:else}
-                        Generate Thumbnail
-                        {/if}
-                    </Button>
-                </div>
-                {/if}
             </div>
             <Field.Group>
                 <Field.Set>
@@ -269,70 +233,6 @@
                         {/if}
                 </Field.Set>
                 <Field.Set>
-                    <Field.Legend>Support Medium</Field.Legend>
-                        {#if mode !== 'show'}
-                        <Select.Root
-                            name="support_id"
-                            bind:value={form.support_id}
-                            type="single"
-                        >
-                            <Select.Trigger class="w-[180px]">{selectedSupportMedium?.label}</Select.Trigger>
-                            <Select.Content>
-                            {#each supportMedia as option}
-                            <Select.Item value={option.value}>{option.label}</Select.Item>
-                            {/each}
-                            </Select.Content>
-                        </Select.Root>
-                        {:else}
-                        {form.support_medium?.title}
-                        {/if}
-                </Field.Set>
-                <Field.Set>
-                    <Field.Legend>Collections</Field.Legend>
-                        {#if mode !== 'show'}
-                        <MultiSelect
-                            bind:value={selectedCollections}
-                            name='collections'
-                            options={collections} />
-                        {:else}
-                        <ul class="media-container">
-                            {#each form.collections as collection}
-                            <li><a href="/collections/{collection.id}">{collection.title}</a></li>
-                            {/each}
-                        </ul>
-                        {/if}
-                </Field.Set>
-                <Field.Set>
-                    <Field.Legend>
-                        <span class="field-clarification">
-                            Image Color
-                            {#if mode !== 'show'}
-                            <Tooltip>
-                                <TooltipTrigger><Info class="icon" /></TooltipTrigger>
-                                <TooltipContent>
-                                    This color will fill the box while the actual image loads.
-                                </TooltipContent>
-                            </Tooltip>
-                            {/if}
-                        </span>
-                    </Field.Legend>
-                    {#if mode !== 'show'}
-                    <div class="color-wrap">
-                        <span class="swatch" style="background-color: {form.image_color}"></span>
-                        <Input
-                            id="image_color"
-                            name="image_color"
-                            bind:value={form.image_color}
-                        />
-                    </div>
-                    {:else}
-                    <div>
-                        <span class="swatch" style="background-color: {form.image_color}"></span>
-                        {form.image_color}
-                    </div>
-                    {/if}
-                </Field.Set>
-                <Field.Set>
                     <Field.Legend>Active</Field.Legend>
                     {#if mode !== 'show'}
                     <Switch
@@ -346,19 +246,6 @@
                     {/if}
                 </Field.Set>
                 <Field.Set>
-                    <Field.Legend>Use as wallpaper</Field.Legend>
-                    {#if mode !== 'show'}
-                    <Switch
-                        id="is_wallpaper"
-                        name="is_wallpaper"
-                        bind.value={!!form.is_wallpaper}
-                        checked={form?.is_wallpaper}
-                    />
-                    {:else}
-                    {form.is_wallpaper ? 'Yes' : 'No'}
-                    {/if}
-                </Field.Set>
-                <Field.Set>
                     <Field.Legend>
                         <span class="field-clarification">
                             Location
@@ -366,7 +253,7 @@
                             <Tooltip>
                                 <TooltipTrigger><Info class="icon" /></TooltipTrigger>
                                 <TooltipContent>
-                                    Purely internal field to track the state/physical location of Pieces
+                                    Purely internal field to track the state/physical location of books
                                 </TooltipContent>
                             </Tooltip>
                             {/if}
@@ -408,7 +295,7 @@
                 </Field.Set>
                 <FormButtons
                     mode={mode}
-                    type='pieces'
+                    type='books'
                     id={form?.id}
                 />
             </Field.Group>

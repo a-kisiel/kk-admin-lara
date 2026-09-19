@@ -30,6 +30,16 @@ class PieceController extends Controller
         $query = Piece::with(['media', 'collections', 'children'])
             ->whereNull('parent_id');
 
+        if (!empty($params['medium_id']))
+            $query->whereHas('media', function ($q) use ($params) {
+                $q->where('media.id', $params['medium_id']);
+            });
+
+        if (!empty($params['collection_id']))
+            $query->whereHas('collections', function ($q) use ($params) {
+                $q->where('collections.id', $params['collection_id']);
+            });
+
         if (!empty($params['is_active'])) {
             $a = $params['is_active'] === 'yes';
             $query->where('active', $a);
@@ -45,7 +55,7 @@ class PieceController extends Controller
         elseif ($params['sort'] === 'latest')
             $query->orderBy('created_at', 'desc');
         elseif ($params['sort'] === 'alphabetical')
-            $query->orderBy('title', 'asc');
+            $query->orderByRaw('lower(title) asc');
         
         $pieces = $query->paginate(20);
 
@@ -53,21 +63,10 @@ class PieceController extends Controller
 
         $pieces = $pieces->append(['stub']);
 
-        $media = [];
-        $all_media = Medium::all();
-        foreach($all_media as $medium)
-            $media[] = [
-                'label' => $medium->title,
-                'value' => $medium->id
-            ];
+        $piece_type = array_flip(config('enums.media_types'))['Piece'];
+        $media = Medium::where('type', $piece_type)->get();
 
-        $collections = [];
-        $all_collections = Collection::all();
-        foreach($all_collections as $collection)
-            $collections[] = [
-                'label' => $collection->title,
-                'value' => $collection->id
-            ];
+        $collections = Collection::all();
 
         return Inertia::render('Pieces/index', [
             'pieces' => $pieces,
@@ -80,13 +79,22 @@ class PieceController extends Controller
 
     public function add(): Response
     {
-        $media = [];
+        $types = array_flip(config('enums.media_types'));
+
+        $media = 
+        $support_media = [];
+
         $all_media = Medium::all();
-        foreach($all_media as $medium)
-            $media[] = [
+        foreach($all_media as $medium) {
+            $m = [
                 'label' => $medium->title,
                 'value' => $medium->id
             ];
+            if ($medium->type === $types['Piece'])
+                $media[] = $m;
+            if ($medium->type === $types['Support'])
+                $support_media[] = $m;
+        }
 
         $collections = [];
         $all_collections = Collection::all();
@@ -99,6 +107,7 @@ class PieceController extends Controller
         return Inertia::render('Pieces/form', [
             'mode' => 'add',
             'media' => $media,
+            'supportMedia' => $support_media,
             'collections' => $collections
         ]);
     }
@@ -119,17 +128,21 @@ class PieceController extends Controller
         $piece = Piece::with(['media', 'collections', 'children', 'supportMedium'])
             ->findOrFail($id);
 
+        $types = array_flip(config('enums.media_types'));
+
         $media = 
         $support_media = [];
+
         $all_media = Medium::all();
         foreach($all_media as $medium) {
             $m = [
                 'label' => $medium->title,
                 'value' => $medium->id
             ];
-            $medium->is_support ?
-                $support_media[] = $m :
+            if ($medium->type === $types['Piece'])
                 $media[] = $m;
+            if ($medium->type === $types['Support'])
+                $support_media[] = $m;
         }
 
         $collections = [];
@@ -141,6 +154,7 @@ class PieceController extends Controller
             ];
 
         return Inertia::render('Pieces/form', [
+            'mode' => 'edit',
             'imgUrl' => config('filesystems.disks.' . config('filesystems.default') . '.url'),
             'piece' => $piece,
             'media' => $media,

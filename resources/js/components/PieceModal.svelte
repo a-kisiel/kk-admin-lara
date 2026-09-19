@@ -23,6 +23,7 @@
         index = $bindable(),
         mode = '',
         imageUrl,
+        type = 'piece',
         addChild = () => {},
         updateChild = () => {},
         deleteChild = () => {}
@@ -42,7 +43,13 @@
         uncompressed: null
     });
 
-    let imgUrl = $state(form.hash ? `${imageUrl}hashed_compressed/${form.hash}.webp` : '');
+    let typePrefix = 'hashed_compressed';
+    if (type === 'book')
+        typePrefix = 'books/compressed';
+    if (type === 'sketch')
+        typePrefix = 'sketches/compressed';
+
+    let imgUrl = $state(form.hash ? `${imageUrl}${typePrefix}/${form.hash}.webp` : '');
 
     let initial = $state.snapshot(form);
 

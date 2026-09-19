@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PieceController;
+use App\Http\Controllers\BookController;
+use App\Http\Controllers\SketchController;
 use App\Http\Controllers\MediumController;
 use App\Http\Controllers\CollectionController;
 
@@ -29,6 +31,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{id}/edit', [PieceController::class, 'update']);
         Route::get('/{id}/delete', [PieceController::class, 'delete']);
     });
+    Route::prefix('/books')->group(function() {
+        Route::get('/', [BookController::class, 'index'])->name('books');
+        Route::get('/add', [BookController::class, 'add'])->name('add_book');
+        Route::post('/add', [BookController::class, 'create'])->name('create_book');
+        Route::get('/{id}', [BookController::class, 'show'])->name('view_book');
+        Route::get('/{id}/edit', [BookController::class, 'edit'])->name('edit_book');
+        Route::post('{id}/edit', [BookController::class, 'update']);
+        Route::get('/{id}/delete', [BookController::class, 'delete']);
+    });
+    Route::prefix('/sketches')->group(function() {
+        Route::get('/', [SketchController::class, 'index'])->name('sketches');
+        Route::get('/add', [SketchController::class, 'add'])->name('add_sketch');
+        Route::post('/add', [SketchController::class, 'create'])->name('create_sketch');
+        Route::get('/{id}', [SketchController::class, 'show'])->name('view_sketch');
+        Route::get('/{id}/edit', [SketchController::class, 'edit'])->name('edit_sketch');
+        Route::post('{id}/edit', [SketchController::class, 'update']);
+        Route::get('/{id}/delete', [SketchController::class, 'delete']);
+    });
     Route::prefix('/media')->group(function() {
         Route::get('/add', [MediumController::class, 'add'])->name('add_medium');
         Route::post('/add', [MediumController::class, 'create'])->name('create_medium');
@@ -52,16 +72,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/rebuild-db', [APIDashboardController::class, 'rebuildDB']);
 
         Route::prefix('/pieces')->group(function() {
-            Route::post('/create', [APIPieceController::class, 'create']);
-            Route::post('/{id}/add-child', [APIPieceController::class, 'addChild']);
-            Route::post('/{id}/add-image', [APIPieceController::class, 'addImage']);
+            Route::get('/{id}/generate-thumbnails', [APIPieceController::class, 'generateThumbnails']);
             Route::post('/{id}/toggle-active', [APIPieceController::class, 'toggleActive']);
-            Route::post('/{id}/update', [APIPieceController::class, 'update']);
-            Route::get('/{id}/delete', [APIPieceController::class, 'delete']);
         });
 
-        Route::get('/get-backup', [APIDashboardController::class, 'getBackup']);
-        Route::get('/regenerate-backup', [APIDashboardController::class, 'generateBackup']);
+        Route::get('/push-changes', [APIDashboardController::class, 'pushChanges']);
+        Route::get('/revert-changes', [APIDashboardController::class, 'revertChanges']);
+        Route::get('/generate-json', [APIDashboardController::class, 'generateJSON']);
+        Route::get('/generate-thumbnails', [APIDashboardController::class, 'generateThumbnails']);
     });
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

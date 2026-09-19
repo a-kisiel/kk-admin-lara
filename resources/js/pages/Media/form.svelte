@@ -1,24 +1,23 @@
 <script lang="ts">    
     import * as Field from "@/components/ui/field/index.js";
     import { Input } from "@/components/ui/input/index.js";
-    import { Switch } from '@/components/ui/switch';
-    import {
-        Tooltip,
-        TooltipContent,
-        TooltipTrigger,
-    } from "@/components/ui/tooltip";
-
-    import { Info } from "lucide-svelte";
+    import * as Select from "@/components/ui/select/index.js";
 
     import ItemHeader from '@/components/ItemHeader.svelte';
     import FormButtons from '@/components/FormButtons.svelte';
 
     let {
         mode,
-        medium = $bindable()
+        medium = $bindable(),
+        mediaTypes
     } = $props();
 
     let form = $state(medium ?? {});
+
+    if (mode === 'add')
+        form.type = 0;
+
+    const selectedMediaType = $derived(mediaTypes.find((label: string, id: number) => id === form.type));
 </script>
 
 <div>
@@ -46,27 +45,23 @@
                         {/if}
                 </Field.Set>
                 <Field.Set>
-                    <Field.Legend>
-                        <span class="field-clarification">
-                            Support Medium
-                            <Tooltip>
-                                <TooltipTrigger><Info class="icon" /></TooltipTrigger>
-                                <TooltipContent>
-                                    Dictates whether this medium is something you paint/draw on, rather than with (e.g. canvas, linen, etc.)
-                                </TooltipContent>
-                            </Tooltip>
-                        </span>
-                    </Field.Legend>
-                    {#if mode !== 'show'}
-                    <Switch
-                        id="is_support"
-                        name="is_support"
-                        bind.value={!!form.is_support}
-                        checked={form ? form.is_support : false}
-                    />
-                    {:else}
-                    {form.is_support ? 'Yes' : 'No'}
-                    {/if}
+                    <Field.Legend>Type</Field.Legend>
+                        {#if mode !== 'show'}
+                        <Select.Root
+                            name="type"
+                            bind:value={form.type}
+                            type="single"
+                        >
+                            <Select.Trigger class="w-[180px]">{selectedMediaType}</Select.Trigger>
+                            <Select.Content>
+                            {#each mediaTypes as label, id}
+                            <Select.Item value={id}>{label}</Select.Item>
+                            {/each}
+                            </Select.Content>
+                        </Select.Root>
+                        {:else}
+                        {form.typeLabel}
+                        {/if}
                 </Field.Set>
                 <FormButtons
                     mode={mode}

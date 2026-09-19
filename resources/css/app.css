@@ -289,6 +289,11 @@
   }
 }
 
+.total-row {
+  text-align: right;
+  padding: 0 20px 20px 0;
+}
+
 .page-header {
     display: flex;
     padding: 12px 24px;
@@ -312,6 +317,17 @@
 
       .icon {
         margin-left: 8px;
+      }
+    }
+
+    .color-wrap {
+      display: flex;
+      align-items: center;
+
+      .swatch {
+        width: 25px; height: 25px;
+        border: 1px solid black;
+        margin-right: 4px;
       }
     }
 }

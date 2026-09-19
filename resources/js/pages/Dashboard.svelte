@@ -3,18 +3,34 @@
 
     let autoUpdate = $state(true);
 
+    let generatingJSON = $state(false);
     let pushingChanges = $state(false);
+    let revertingChanges = $state(false);
     let confirmRebuild = $state(false);
     let rebuildingDB = $state(false);
     let pruningS3 = $state(false);
+    let generatingThumbnails = $state(false);
+
     let db_file = $state((new DataTransfer()).files);
 
     const user = $derived(page.props.auth.user);
 
     async function pushChanges() {
         pushingChanges = true;
-        const res = await fetch('/api/regenerate-backup');
+        const res = await fetch('/api/push-changes');
         pushingChanges = false;
+    }
+
+    async function revertChanges() {
+        revertingChanges = true;
+        const res = await fetch('/api/revert-changes');
+        revertingChanges = false;
+    }
+
+    async function generateJSON() {
+        generatingJSON = true;
+        const res = await fetch('/api/generate-json');
+        generatingJSON = false;
     }
 
     async function rebuildDB() {
@@ -53,6 +69,17 @@
     async function pruneS3() {
 
     }
+
+    async function generateThumbnails() {
+        generatingThumbnails = true;
+        const res = await fetch('/api/generate-thumbnails');
+        if (res.status === 200) {
+            toast.success('suces')
+        } else {
+            toast.error('Encountered an error :/');
+        }
+        generatingThumbnails = false;
+    }
 </script>
 
 <script lang="ts">
@@ -84,7 +111,7 @@
     </div>
     <!-- <Separator /> -->
     <ItemGroup className="max-w-sm">
-        <Item variant="outline">
+        <!-- <Item variant="outline">
             <ItemContent>
                 <ItemTitle>Automatically Update</ItemTitle>
                 <ItemDescription>
@@ -97,18 +124,50 @@
                     bind:checked={autoUpdate}
                 />
             </ItemActions>
-        </Item>
+        </Item> -->
         <Item variant="outline">
             <ItemContent>
                 <ItemTitle>Push Changes</ItemTitle>
                 <ItemDescription>
-                    Manually generate a new data file and push it up to be used by the main site.
+                    Set the most recent file in pending/ to active
                 </ItemDescription>
             </ItemContent>
             <ItemActions>
                 <Button onclick={pushChanges} variant="outline" size="sm">
                 Push Changes
                 {#if pushingChanges}
+                <Spinner />
+                {/if}
+                </Button>
+            </ItemActions>
+        </Item>
+        <Item variant="outline">
+            <ItemContent>
+                <ItemTitle>Revert Changes</ItemTitle>
+                <ItemDescription>
+                    Set the last file in backups/ to active
+                </ItemDescription>
+            </ItemContent>
+            <ItemActions>
+                <Button onclick={revertChanges} variant="outline" size="sm">
+                Revert Changes
+                {#if revertingChanges}
+                <Spinner />
+                {/if}
+                </Button>
+            </ItemActions>
+        </Item>
+        <Item variant="outline">
+            <ItemContent>
+                <ItemTitle>Generate JSON</ItemTitle>
+                <ItemDescription>
+                    Generate a new data file to pending/
+                </ItemDescription>
+            </ItemContent>
+            <ItemActions>
+                <Button onclick={generateJSON} variant="outline" size="sm">
+                Generate
+                {#if generatingJSON}
                 <Spinner />
                 {/if}
                 </Button>
@@ -137,6 +196,19 @@
                 <Button onclick={pruneS3} variant="outline" size="sm">
                 Remove
                 {#if pruningS3}
+                <Spinner />
+                {/if}
+                </Button>
+            </ItemActions>
+        </Item>
+        <Item variant="outline">
+            <ItemContent>
+                <ItemTitle>Generate Thumbnails</ItemTitle>
+            </ItemContent>
+            <ItemActions>
+                <Button onclick={generateThumbnails} variant="outline" size="sm">
+                Generate
+                {#if generatingThumbnails}
                 <Spinner />
                 {/if}
                 </Button>

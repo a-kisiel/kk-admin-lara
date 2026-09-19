@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 
-class Piece extends Model
+class Book extends Model
 {
     public $fillable = [
         'title',
         'description',
-        'dimensions',
         'hash',
         'image_width',
         'image_height',
@@ -25,32 +24,19 @@ class Piece extends Model
         'support_id',
         'active',
         'is_wallpaper',
-        'parent_id',
-        'compressed',
-        'uncompressed'
+        'parent_id'
     ];
 
     public function casts(): array
     {
         return [
-            'active' => 'boolean',
-            'is_wallpaper' => 'boolean'
+            'active' => 'boolean'
         ];
     }
 
     public function media()
     {
-        return $this->belongsToMany(Medium::class, 'piece_media');
-    }
-
-    public function supportMedium()
-    {
-        return $this->belongsTo(Medium::class, 'support_id');
-    }
-
-    public function collections()
-    {
-        return $this->belongsToMany(Collection::class, 'collection_pieces');
+        return $this->belongsToMany(Medium::class, 'book_media');
     }
 
     public function children()
@@ -65,7 +51,7 @@ class Piece extends Model
 
     public static function getNewHash(): String
     {
-        $existing = Piece::pluck('hash');
+        $existing = Book::pluck('hash');
 
         $hash = null;
         while (!$hash || $existing->contains($hash)) {
@@ -98,41 +84,18 @@ class Piece extends Model
         $this->media()->detach(Medium::whereIn('id', $media_to_remove)->pluck('id'));
     }
 
-    public function updateCollections($collections)
-    {
-        $collections = json_decode($collections, true);
-
-        $existing_collections = $this->collections->pluck('id');
-
-        $collections_to_add = 
-        $collections_to_remove =
-        $collection_ids = [];
-
-        foreach($collections as $collection) {
-            $collection_ids[] = $collection['value'];
-            if (!$existing_collections->contains($collection['value']))
-                $collections_to_add[] = $collection['value'];
-        }
-        foreach($existing_collections as $collection)
-            if (!in_array($collection, $collection_ids))
-                $collections_to_remove[] = $collection;
-
-        $this->collections()->attach(Collection::whereIn('id', $collections_to_add)->pluck('id'));
-        $this->collections()->detach(Collection::whereIn('id', $collections_to_remove)->pluck('id'));
-    }
-
     public function addImage($file, $hash, $ext)
     {
-        $dir = 'hashed_' . ($ext === 'jpg' ? 'uncompressed' : 'compressed');
+        $dir = 'books/' . ($ext === 'jpg' ? 'uncompressed' : 'compressed');
 
-        Storage::put("$dir/$hash.$ext", file_get_contents($file));
+        $success = Storage::put("$dir/$hash.$ext", file_get_contents($file));
     }
 
     public function generateThumbnails(Request $request = null)
     {
         // Thumbnails are being generated after the fact from existing files
         if (empty($request)) {
-            $uncompressed = Image::fromStorage("hashed_uncompressed/$this->hash.jpg");
+            $uncompressed = Image::fromStorage("books/uncompressed/$this->hash.jpg");
             $thumbnail = $uncompressed->scale(width: 50);
         }
         else {
@@ -147,14 +110,14 @@ class Piece extends Model
         if (empty($this->image_color))
             $data['image_color'] = $uncompressed->dominantColor();
 
-        $thumbnail->storeAs(path: 'thumbnails/pieces', name: "$this->hash.jpg");
+        $thumbnail->storeAs(path: 'thumbnails/books', name: "$this->hash.jpg");
         $this->update($data);
     }
 
     public function deleteImages()
     {
-        Storage::delete("hashed_uncompressed/$this->hash.jpg");
-        Storage::delete("hashed_compressed/$this->hash.webp");
+        Storage::delete("books/uncompressed/$this->hash.jpg");
+        Storage::delete("books/compressed/$this->hash.webp");
     }
 
     public function handleChildren($request, $children)

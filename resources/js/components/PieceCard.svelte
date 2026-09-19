@@ -9,12 +9,24 @@
     import { ChevronLeft, ChevronRight, SquarePen, CircleCheck, Circle, Image } from "lucide-svelte";
 
     let {
-        piece = $bindable()
+        piece = $bindable(),
+        type = 'piece'
     } = $props();
 
     let carousel;
 
     let active = $state(piece.active);
+    let typeStub = 'hashed_';
+    if (type === 'book')
+        typeStub = 'books/';
+    if (type === 'sketch')
+        typeStub = 'sketches/';
+
+    let urlStub = 'pieces';
+    if (type === 'book')
+        urlStub = 'books';
+    if (type === 'sketch')
+        urlStub = 'sketches';
 
     async function toggleActive() {
         const res = await fetch(`/api/pieces/${piece.id}/toggle-active`, {
@@ -32,16 +44,16 @@
             dots={false}
         >
             <a
-                href="/pieces/{piece.id}"
+                href="/{urlStub}/{piece.id}"
                 class="carousel-item"
-                style="{piece.hash ? `background-image: url(${piece.stub}hashed_compressed/${piece.hash}.webp);` : ''}"
+                style="{piece.hash ? `background-image: url(${piece.stub}${typeStub}compressed/${piece.hash}.webp);` : ''}"
                 title={piece.title}
             ></a>
             {#each piece.children as child}
             <a
-                href="/pieces/{piece.id}"
+                href="/{urlStub}/{piece.id}"
                 class="carousel-item {child.hash ? '' : 'default-image'}"
-                style="{child.hash ? `background-image: url(${piece.stub}hashed_compressed/${child.hash}.webp);` : ''}"
+                style="{child.hash ? `background-image: url(${piece.stub}${typeStub}compressed/${child.hash}.webp);` : ''}"
                 title={child.title}
             >
                 {#if !child.hash}
@@ -54,9 +66,9 @@
         </Carousel>
     </div>
     <div class="card-footer">
-        <a href="/pieces/{piece.id}" class="card-title">{piece.title}</a>
+        <a href="/{urlStub}/{piece.id}" class="card-title">{piece.title}</a>
         <div class="card-tools">
-            <a href="/pieces/{piece.id}/edit" style="margin-right: 4px;"><SquarePen /></a>
+            <a href="/{urlStub}/{piece.id}/edit" style="margin-right: 4px;"><SquarePen /></a>
             <button onclick={toggleActive} class="active-toggle">
                 {#if active}
                 <Tooltip>

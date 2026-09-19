@@ -21,7 +21,7 @@
             <div style="margin-left: 10px;">
                 <h2>Main Media</h2>
                 <div class="list">
-                    {#each props.media as medium}
+                    {#each props.media['Piece'] as medium}
                     <div class="item">
                         <a href="{`/media/${medium.id}`}">{medium.title}</a> ({medium.pieces_count})
                     </div>
@@ -33,12 +33,24 @@
             <div>
                 <h2>Support Media</h2>
                 <div class="list">
-                    {#each props.support_media as medium}
+                    {#each props.media["Support"] as medium}
                     <div class="item">
                         <a href="{`/media/${medium.id}`}">{medium.title}</a> ({medium.support_pieces_count})
                     </div>
                     {:else}
                     <div class="list-else">No support media yet.</div>
+                    {/each}
+                </div>
+            </div>
+            <div>
+                <h2>Book Media</h2>
+                <div class="list">
+                    {#each props.media["Book"] as medium}
+                    <div class="item">
+                        <a href="{`/media/${medium.id}`}">{medium.title}</a> ({medium.support_pieces_count})
+                    </div>
+                    {:else}
+                    <div class="list-else">No book media yet.</div>
                     {/each}
                 </div>
             </div>

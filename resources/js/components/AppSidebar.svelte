@@ -4,6 +4,8 @@
     import Image from 'lucide-svelte/icons/image';
     import Brush from 'lucide-svelte/icons/brush';
     import SquareLibrary from 'lucide-svelte/icons/square-library';
+    import BookOpenText from 'lucide-svelte/icons/book-open-text';
+    import NotebookPen from 'lucide-svelte/icons/notebook-pen';
     import type { Snippet } from 'svelte';
     import AppLogo from '@/components/AppLogo.svelte';
     import NavFooter from '@/components/NavFooter.svelte';
@@ -40,6 +42,16 @@
             icon: Image
         },
         {
+            title: 'Books',
+            href: '/books',
+            icon: BookOpenText
+        },
+        {
+            title: 'Sketches',
+            href: '/sketches',
+            icon: NotebookPen
+        },
+        {
             title: 'Media',
             href: '/media',
             icon: Brush
@@ -49,19 +61,6 @@
             href: '/collections',
             icon: SquareLibrary
         }
-    ];
-
-    const footerNavItems: NavItem[] = [
-        // {
-        //     title: 'Repository',
-        //     href: 'https://github.com/laravel/svelte-starter-kit',
-        //     icon: FolderGit2,
-        // },
-        // {
-        //     title: 'Documentation',
-        //     href: 'https://laravel.com/docs/starter-kits#svelte',
-        //     icon: BookOpen,
-        // },
     ];
 </script>
 
@@ -89,7 +88,6 @@
     </SidebarContent>
 
     <SidebarFooter>
-        <NavFooter items={footerNavItems} />
         <NavUser />
     </SidebarFooter>
 </Sidebar>

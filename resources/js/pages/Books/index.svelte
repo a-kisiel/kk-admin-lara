@@ -20,9 +20,7 @@
     const props = $derived(page.props);
 
     const selectedMedium = $derived(props.media?.find((m: any) => m.id === +props.params.medium_id));
-    const selectedCollection = $derived(props.collections?.find((c: any) => c.id === +props.params.collection_id));
     const selectedSort = $derived(sortOptions.find(o => o.value === props.params.sort));
-    const selectedWallpaper = $derived(binaryOptions.find(o => o.value === props.params.is_wallpaper));
     const selectedActive = $derived(binaryOptions.find(o => o.value === props.params.is_active));
 
     function setParam(key: string, value: any) {
@@ -39,7 +37,7 @@
 
 </script>
 
-<AppHead title="Pieces" />
+<AppHead title="Books" />
 
 <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
     <div
@@ -58,22 +56,6 @@
                         <Select.Content>
                             <Select.Item value="">&nbsp;</Select.Item>
                             {#each props.media as option}
-                            <Select.Item value={option.id} >{option.title}</Select.Item>
-                            {/each}
-                        </Select.Content>
-                    </Select.Root>
-                </div>
-                <div class="filter-wrap">
-                    <span>Collection</span>
-                    <Select.Root
-                        onValueChange={e => setParam('collection_id', e)}
-                        bind:value={props.params.collection_id}
-                        type="single"
-                    >
-                        <Select.Trigger class="w-[240px]">{selectedCollection?.title}</Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="">&nbsp;</Select.Item>
-                            {#each props.collections as option}
                             <Select.Item value={option.id} >{option.title}</Select.Item>
                             {/each}
                         </Select.Content>
@@ -110,41 +92,26 @@
                         </Select.Content>
                     </Select.Root>
                 </div>
-                <div class="filter-wrap">
-                    <span>Wallpaper</span>
-                    <Select.Root
-                        onValueChange={e => setParam('is_wallpaper', e)}
-                        bind:value={props.params.is_wallpaper}
-                        type="single"
-                    >
-                        <Select.Trigger class="w-[60px]">{selectedWallpaper?.label}</Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="">&nbsp;</Select.Item>
-                        {#each binaryOptions as option}
-                            <Select.Item value={option.value} >{option.label}</Select.Item>
-                        {/each}
-                        </Select.Content>
-                    </Select.Root>
-                </div>
             </div>
-            <a href="/pieces/add" class="list-add">
-                Add Piece <Plus />
+            <a href="/books/add" class="list-add">
+                Add Book <Plus />
             </a>
         </div>
         <div class="list piece-list">
-            {#each props.pieces as piece}
+            {#each props.books as book}
             <PieceCard
-                piece={piece}
+                piece={book}
+                type='book'
             />
             {:else}
-            <div class="list-else">No pieces yet.</div>
+            <div class="list-else">No books yet.</div>
             {/each}
         </div>
-        {#if props.pieces?.length > 0}
-        <div class="total-row">Total: {props.total_pieces}</div>
+        {#if props.books?.length > 0}
+        <div class="total-row">Total: {props.total_books}</div>
         {/if}
         <div class="list-pagination">
-            <Pagination.Root count={props.total_pieces} perPage={20}>
+            <Pagination.Root count={props.total_books} perPage={20}>
             {#snippet children({ pages })}
             <Pagination.Content>
                 <Pagination.Item>

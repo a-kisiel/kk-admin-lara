@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Medium extends Model
 {
-    public $fillable = ['title', 'is_support'];
-
+    public $fillable = ['title', 'type', 'active'];
+    
     public function casts(): array
     {
         return [
-            'is_support' => 'boolean',
+            'active' => 'boolean'
         ];
     }
 
@@ -23,5 +23,20 @@ class Medium extends Model
     public function supportPieces()
     {
         return $this->hasMany(Piece::class, 'support_id');
+    }
+
+    public function books()
+    {
+        return $this->belongsToMany(Book::class, 'book_media');
+    }
+
+    public function sketches()
+    {
+        return $this->belongsToMany(Sketch::class, 'sketch_media');
+    }
+
+    public function getTypeLabelAttribute()
+    {
+        return config('enums.media_types')[$this->type];
     }
 }
